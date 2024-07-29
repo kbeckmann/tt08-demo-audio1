@@ -101,7 +101,7 @@ localparam [255:0] rom_contents = {
   always @(*) begin
     for (int i = 0; i < 256; i = i + 1)
       if (rom_addr == i)
-        data = rom_contents[i];
+        rom_data = rom_contents[i];
   end
 
   assign rom_addr = counter[10:3];
