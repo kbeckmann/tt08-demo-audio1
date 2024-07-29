@@ -100,7 +100,7 @@ localparam [255:0] rom_contents = {
 
   always @(*) begin
     for (int i = 0; i < 256; i = i + 1)
-      if (addr == i)
+      if (rom_addr == i)
         data = rom_contents[i];
   end
 
