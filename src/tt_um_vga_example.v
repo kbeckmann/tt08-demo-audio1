@@ -42,7 +42,8 @@ module tt_um_vga_example(
   wire _unused_ok = &{ena, ui_in, uio_in, pix_x, pix_y};
 
   reg [9:0] frame;
-  reg [16:0] counter;
+  // reg [16:0] counter;
+  reg [6:0] counter;
 
 // Audio start
   pdm pdm_gen(
@@ -52,8 +53,39 @@ module tt_um_vga_example(
     .pdm_out(audio_out)
   );
 
-  wire [15:0] triangle = counter[16] ? -counter : counter;
-  assign audio_sample = triangle;
+  // wire [15:0] triangle = counter[16] ? -counter : counter;
+  // assign audio_sample = triangle;
+
+  // Just to test, let's add a small memory and output it as audio samples
+
+  // ROM
+  wire [3:0] rom_adr;
+  wire [7:0] rom_data;
+  always @(*) begin
+      case (rom_adr)
+          4'h0: rom_data = 8'h12;
+          4'h1: rom_data = 8'h34;
+          4'h2: rom_data = 8'h56;
+          4'h3: rom_data = 8'h78;
+          4'h4: rom_data = 8'h9A;
+          4'h5: rom_data = 8'hBC;
+          4'h6: rom_data = 8'hDE;
+          4'h7: rom_data = 8'hF0;
+          4'h8: rom_data = 8'h11;
+          4'h9: rom_data = 8'h22;
+          4'hA: rom_data = 8'h33;
+          4'hB: rom_data = 8'h44;
+          4'hC: rom_data = 8'h55;
+          4'hD: rom_data = 8'h66;
+          4'hE: rom_data = 8'h77;
+          4'hF: rom_data = 8'h88;
+          default: rom_data = 8'h00;
+      endcase
+  end
+
+  assign rom_adr = counter[6:3];
+  assign audio_sample = rom_data;
+
 // Audio end
 
 
