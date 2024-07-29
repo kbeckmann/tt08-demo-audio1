@@ -41,6 +41,7 @@ module tt_um_vga_example(
   // wire _unused_ok = &{ena, ui_in, uio_in};
   wire _unused_ok = &{ena, ui_in, uio_in, pix_x, pix_y};
 
+  reg [9:0] frame;
   reg [16:0] counter;
 
 // Audio start
@@ -66,14 +67,21 @@ module tt_um_vga_example(
     .vpos(pix_y)
   );
   
-  assign R = video_active ? {counter[8], counter[9]} : 2'b00;
-  assign G = video_active ? {counter[4], counter[5]} : 2'b00;
-  assign B = video_active ? {counter[6], counter[7]} : 2'b00;
+  assign R = video_active ? {frame[8], frame[9]} : 2'b00;
+  assign G = video_active ? {frame[4], frame[5]} : 2'b00;
+  assign B = video_active ? {frame[6], frame[7]} : 2'b00;
   
-  always @(posedge vsync) begin
+  always @(posedge clk) begin
     if (~rst_n) begin
+      frame <= 0;
       counter <= 0;
     end else begin
+      if (vsync) begin
+        frame <= frame + 1;
+      end else begin
+        frame <= frame;
+      end
+
       counter <= counter + 1;
     end
   end
