@@ -63,7 +63,7 @@ module tt_um_vga_example(
   reg  [7:0] rom_data;
 
 // Define the ROM contents as a 256x8 array
-localparam [255:0] rom_contents = {
+localparam [255:0][7:0] rom_contents = {
   8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h05, 8'h06, 8'h07,
   8'h08, 8'h09, 8'h0A, 8'h0B, 8'h0C, 8'h0D, 8'h0E, 8'h0F,
   8'h10, 8'h11, 8'h12, 8'h13, 8'h14, 8'h15, 8'h16, 8'h17,
@@ -99,7 +99,7 @@ localparam [255:0] rom_contents = {
 };
 
   always @(*) begin
-    for (int i = 0; i < 256; i = i + 1)
+    for (byte i = 0; i < 256; i = i + 1)
       if (rom_addr == i)
         rom_data = rom_contents[i];
   end
