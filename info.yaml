@@ -19,7 +19,7 @@ project:
   source_files:
     - "tt_um_vga_example.v"
     - "hvsync_gen.v"
-    - "pwm.v"
+    - "pdm.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
