@@ -60,7 +60,7 @@ module tt_um_vga_example(
 
   // ROM
   wire [3:0] rom_adr;
-  wire [7:0] rom_data;
+  reg  [7:0] rom_data;
   always @(*) begin
       case (rom_adr)
           4'h0: rom_data = 8'h12;
