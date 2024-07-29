@@ -38,9 +38,10 @@ module tt_um_vga_example(
   assign uio_oe = 8'b10000000;
 
   // Suppress unused signals warning
-  wire _unused_ok = &{ena, ui_in, uio_in};
+  // wire _unused_ok = &{ena, ui_in, uio_in};
+  wire _unused_ok = &{ena, ui_in, uio_in, pix_x, pix_y};
 
-  reg [9:0] counter;
+  reg [16:0] counter;
 
 // Audio start
   pdm pdm_gen(
