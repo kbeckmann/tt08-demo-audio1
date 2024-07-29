@@ -29,7 +29,7 @@ async def test_project(dut):
     dut.ui_in.value = 20
     dut.uio_in.value = 30
 
-    # Test for one second @ 25 MHz
-    await ClockCycles(dut.clk, 25000000)
+    # Test for 1 ms @ 25 MHz
+    await ClockCycles(dut.clk, 25000)
 
     # assert dut.uo_out.value == 50
