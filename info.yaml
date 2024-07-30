@@ -20,6 +20,8 @@ project:
     - "tt_um_vga_example.v"
     - "hvsync_gen.v"
     - "pdm.v"
+    - "scale_rom.v"
+    - "voice.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
