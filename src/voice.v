@@ -27,6 +27,7 @@ reg         PA_MSB_in_prev      = 0;
 
 reg  [11:0] pulse               = 0;
 reg  [11:0] sawtooth            = 0;
+reg  [11:0] triangle_normal;
 reg  [11:0] triangle            = 0;
 reg  [22:0] LFSR                = 0; //23'b11001011000000101100101;
 wire [11:0] noise               = LFSR[22:11];
@@ -51,14 +52,14 @@ reg         divider_rst         = 0;
 reg  [ 3:0] Dec_rel             = 0;
 reg         Dec_rel_sel         = 0;
 
-reg  [17:0] env_counter         = 0;
+reg  [ 8:0] env_counter         = 0;
 reg         env_count_hold_A    = 0;
 reg         env_count_hold_B    = 0;
 reg         env_cnt_up          = 0;
 reg         env_cnt_clear       = 0;
 
 reg  [11:0] signal_mux          = 0;
-reg  [35:0] signal_vol			= 0;
+reg  [11:0] signal_vol			= 0;
 
 wire        CTRL_GATE           = control[0];
 wire        CTRL_SYNC           = control[1];
@@ -113,43 +114,44 @@ end
 // oscillator in the EXOR function of the triangle waveform generator with the
 // accumulator MSB of the previous oscillator. That is why the triangle waveform
 // must be selected to use Ring Modulation."
-wire [11:0] triangle_w;
-assign triangle = (1<<12) - 1 - triangle_w;
-
-always @(posedge clk_1MHz)
+always @(*)
 begin
     if (CTRL_RINGMOD == 0)
     begin
         // no ringmodulation
-        triangle_w[11] <= accumulator[23] ^ accumulator[22];
-        triangle_w[10] <= accumulator[23] ^ accumulator[21];
-        triangle_w[9]  <= accumulator[23] ^ accumulator[20];
-        triangle_w[8]  <= accumulator[23] ^ accumulator[19];
-        triangle_w[7]  <= accumulator[23] ^ accumulator[18];
-        triangle_w[6]  <= accumulator[23] ^ accumulator[17];
-        triangle_w[5]  <= accumulator[23] ^ accumulator[16];
-        triangle_w[4]  <= accumulator[23] ^ accumulator[15];
-        triangle_w[3]  <= accumulator[23] ^ accumulator[14];
-        triangle_w[2]  <= accumulator[23] ^ accumulator[13];
-        triangle_w[1]  <= accumulator[23] ^ accumulator[12];
-        triangle_w[0]  <= accumulator[23] ^ accumulator[11];
+        triangle_normal[11] = accumulator[23] ^ accumulator[22];
+        triangle_normal[10] = accumulator[23] ^ accumulator[21];
+        triangle_normal[9]  = accumulator[23] ^ accumulator[20];
+        triangle_normal[8]  = accumulator[23] ^ accumulator[19];
+        triangle_normal[7]  = accumulator[23] ^ accumulator[18];
+        triangle_normal[6]  = accumulator[23] ^ accumulator[17];
+        triangle_normal[5]  = accumulator[23] ^ accumulator[16];
+        triangle_normal[4]  = accumulator[23] ^ accumulator[15];
+        triangle_normal[3]  = accumulator[23] ^ accumulator[14];
+        triangle_normal[2]  = accumulator[23] ^ accumulator[13];
+        triangle_normal[1]  = accumulator[23] ^ accumulator[12];
+        triangle_normal[0]  = accumulator[23] ^ accumulator[11];
     end
     else
     begin
         // ringmodulation by the other voice (previous voice)
-        triangle_w[11] <= PA_MSB_in ^ accumulator[22];
-        triangle_w[10] <= PA_MSB_in ^ accumulator[21];
-        triangle_w[9]  <= PA_MSB_in ^ accumulator[20];
-        triangle_w[8]  <= PA_MSB_in ^ accumulator[19];
-        triangle_w[7]  <= PA_MSB_in ^ accumulator[18];
-        triangle_w[6]  <= PA_MSB_in ^ accumulator[17];
-        triangle_w[5]  <= PA_MSB_in ^ accumulator[16];
-        triangle_w[4]  <= PA_MSB_in ^ accumulator[15];
-        triangle_w[3]  <= PA_MSB_in ^ accumulator[14];
-        triangle_w[2]  <= PA_MSB_in ^ accumulator[13];
-        triangle_w[1]  <= PA_MSB_in ^ accumulator[12];
-        triangle_w[0]  <= PA_MSB_in ^ accumulator[11];
+        triangle_normal[11] = PA_MSB_in ^ accumulator[22];
+        triangle_normal[10] = PA_MSB_in ^ accumulator[21];
+        triangle_normal[9]  = PA_MSB_in ^ accumulator[20];
+        triangle_normal[8]  = PA_MSB_in ^ accumulator[19];
+        triangle_normal[7]  = PA_MSB_in ^ accumulator[18];
+        triangle_normal[6]  = PA_MSB_in ^ accumulator[17];
+        triangle_normal[5]  = PA_MSB_in ^ accumulator[16];
+        triangle_normal[4]  = PA_MSB_in ^ accumulator[15];
+        triangle_normal[3]  = PA_MSB_in ^ accumulator[14];
+        triangle_normal[2]  = PA_MSB_in ^ accumulator[13];
+        triangle_normal[1]  = PA_MSB_in ^ accumulator[12];
+        triangle_normal[0]  = PA_MSB_in ^ accumulator[11];
     end
+end
+always @(posedge clk_1MHz)
+begin
+    triangle <= 12'b111111111111 - triangle_normal;
 end
 
 // Pulse waveform :

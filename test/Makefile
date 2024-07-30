@@ -5,7 +5,7 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = hvsync_gen.v pdm.v tt_um_vga_example.v scale_rom.v
+PROJECT_SOURCES = hvsync_gen.v pdm.v tt_um_vga_example.v scale_rom.v voice.v
 
 ifneq ($(GATES),yes)
 

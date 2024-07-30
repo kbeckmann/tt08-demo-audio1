@@ -98,26 +98,26 @@ module tt_um_vga_example(
           .Att_dec(8'h29),
           .Sus_Rel(8'h79),
           .PA_MSB_in(),
-          .PA_MSB_out(),
+          .PA_MSB_out(msb),
           .voice(voice1)
       );
-  // voice #()
-  //     Voice2(
-  //         .clk_1MHz(clk),
-  //         .reset(~rst_n),
-  //         // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: counter[17:10])),
-  //         .frequency(freq_out2 >> 1),
-  //         .pulsewidth(1<<9),
-  //         .control(control2),
-  //         .Att_dec(8'h6F),
-  //         .Sus_Rel(8'h7A),
-  //         .PA_MSB_in(msb),
-  //         .PA_MSB_out(),
-  //         .voice(voice2)
-  //     );
+  voice #()
+      Voice2(
+          .clk_1MHz(clk),
+          .reset(~rst_n),
+          // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: counter[17:10])),
+          .frequency(freq_out2 >> 1),
+          .pulsewidth(1<<9),
+          .control(control2),
+          .Att_dec(8'h6F),
+          .Sus_Rel(8'h7A),
+          .PA_MSB_in(msb),
+          .PA_MSB_out(),
+          .voice(voice2)
+      );
 
-  // assign audio_sample = voice1 + voice2;
-  assign audio_sample = voice1;
+  assign audio_sample = voice1 + voice2;
+  // assign audio_sample = voice1;
 
 // Audio end
 
