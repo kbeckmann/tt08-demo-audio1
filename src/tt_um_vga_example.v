@@ -45,7 +45,7 @@ module tt_um_vga_example(
   wire [8:0] rom_addr;
   reg  [8:0] rom_addr_r;
   reg  [7:0] rom_data_r;
-  reg  [7:0] rom_content[256];
+  reg  [7:0] rom_content[512];
 
   initial begin
     rom_content[0] = 8'hB5;
