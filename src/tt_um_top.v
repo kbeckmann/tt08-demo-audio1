@@ -26,13 +26,15 @@ module tt_um_top(
 // ------------------------------
 // Audio signals
 wire audio_pdm;
-wire [12:0] audio_sample;
+wire [15:0] audio_sample;
 
 `ifdef VERILATOR
   // assign clk_hz = 48000 * 21; // Close enough to 1MHz, but integer factor of 48kHz
   // assign audio_en = 1'b1;
   assign audio_en = 1'b0;
-  assign audio_out = {4'b0, audio_sample} <<  4;
+  // assign audio_out = {4'b0, audio_sample} <<  4;
+  // assign audio_out = ((mix1 + mix2 + mix3 + mix4) << 5);
+  assign audio_out = (mix8 << 6);
   assign clk_hz = 1000000;
 `endif
 
@@ -66,14 +68,50 @@ pdm #(.N(12)) pdm_gen(
   .pdm_out(audio_pdm)
 );
 
-reg [24:0] counter;
-always @(posedge clk) begin
-  if (~rst_n) begin
-    counter <= 0;
-  end else begin
-    counter <= counter + 1;
+  // Simple LPF
+  reg signed [15:0] mix1;
+  reg signed [15:0] mix2;
+  reg signed [15:0] mix3;
+  reg signed [15:0] mix4;
+  reg signed [15:0] mix5;
+  reg signed [15:0] mix6;
+  reg signed [15:0] mix7;
+  reg signed [15:0] mix8;
+
+  reg clk_48k;
+  reg clk_48k_posedge;
+  reg [24:0] counter;
+  always @(posedge clk) begin
+    if (~rst_n) begin
+      counter <= 0;
+      mix1 <= 0;
+      mix2 <= 0;
+      mix3 <= 0;
+      mix4 <= 0;
+      mix5 <= 0;
+      mix6 <= 0;
+      mix7 <= 0;
+      mix8 <= 0;
+    end else begin
+      counter <= counter + 1;
+      clk_48k <= counter[5];
+      clk_48k_posedge <= (~clk_48k & counter[5]);
+      if (clk_48k_posedge) begin
+
+        // Delay line
+        mix1 <= (voice1 >> 5);
+        mix2 <= mix1;
+        mix3 <= mix2;
+        mix4 <= mix3;
+        mix5 <= mix4;
+        mix6 <= mix5;
+        mix7 <= mix6;
+
+        // Summing
+        mix8 <= mix1 + mix2 + mix3 + mix4 + mix5 + mix6 + mix7;
+      end
+    end
   end
-end
 
 wire [ 3:0] note_in;
 wire [15:0] freq_out;
