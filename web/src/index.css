@@ -1,0 +1,96 @@
+header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  padding: 0 8px;
+  background: #de3f89;
+  color: white;
+}
+
+.flex-spacer {
+  flex: 1;
+}
+
+main {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  background-color: black;
+}
+
+#code-editor {
+  flex: 1;
+  min-height: 200px;
+  height: 100%;
+  width: 50%;
+}
+
+#vga-canvas-container {
+  max-width: 50%;
+}
+
+#fps-display {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  font-variant-numeric: tabular-nums;
+  color: white;
+}
+
+#preset-buttons button:not(:last-child) {
+  margin-right: 4px;
+}
+
+#download-button {
+  margin-left: 8px;
+}
+
+#download-button svg:hover {
+  cursor: pointer;
+  fill: white;
+}
+
+#share-button {
+  margin-left: 8px;
+}
+
+#share-button svg:hover {
+  cursor: pointer;
+  fill: white;
+}
+
+#clipboard-button {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+#audio-button {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+#audio-mute-button {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+
+#input-values {
+  padding: 8px 8px;
+  color: #ccc;
+  background: #333;
+}
+
+#input-values button.active {
+  background: #0f0;
+}

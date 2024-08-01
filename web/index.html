@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VGA Playground</title>
+    <link href="https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="src/index.css" />
+  </head>
+  <body>
+    <header>
+      Tiny Tapeout VGA Playground
+      <span style="margin-left: 32px"> Presets:&nbsp;</span>
+      <span id="preset-buttons"></span>
+      <span id="download-button" title="Download Zip">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="24px"
+          viewBox="0 -960 960 960"
+          width="24px"
+          fill="#eee"
+        >
+          <path
+            d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"
+          />
+        </svg>
+      </span>
+      <span id="share-button" title="Share code as an URL">
+        <!-- Credits: https://iconduck.com/icons/68205/share https://iconduck.com/sets/fluent-ui-system-icons License: MIT License -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="24px"
+          viewBox="0 0 20 20"
+          width="24px"
+          fill="#eee"
+        >
+          <path d="m8.5 4c.27614 0 .5.22386.5.5 0 .24545778-.17687704.4496079-.41012499.49194425l-.08987501.00805575h-3c-.77969882 0-1.420449.59488554-1.49313345 1.35553954l-.00686655.14446046v8c0 .7796706.59488554 1.4204457 1.35553954 1.4931332l.14446046.0068668h8c.7796706 0 1.4204457-.5949121 1.4931332-1.3555442l.0068668-.1444558v-1c0-.2761.2239-.5.5-.5.2454222 0 .4496.1769086.4919429.4101355l.0080571.0898645v1c0 1.325472-1.0315469 2.4100378-2.3356256 2.4946823l-.1643744.0053177h-8c-1.3254816 0-2.41003853-1.0315469-2.49468231-2.3356256l-.00531769-.1643744v-8c0-1.3254816 1.03153766-2.41003853 2.33562452-2.49468231l.16437548-.00531769zm3.8776-.42218c0-.44778533.4618631-.70274151.8163008-.51603855l.0740992.04685855.0617.05301 4.4971 4.42118c.1865778.18340444.2224.46564543.1074667.68700565l-.0501667.07984435-.0572.06544-4.4971 4.42258c-.31528.3100533-.8146258.1449156-.9285862-.2465427l-.0183138-.0872573-.0053-.0823v-2.0955l-.2577.0232c-.2489.0266-.4963.0654-.7423.1164-1.53378.3183-3.01312 1.1122-4.44499 2.3907-.38943.3478-.99194.019-.92789-.5063.486252-3.98795475 2.48231514-6.23076163 5.8838529-6.60251607l.2644271-.02490393.2246-.01511zm1 1.03322v2.03152l-1.1513.07744c-1.5737.12605-2.73395.67426-3.5631 1.56852-.66903.72156-1.17827 1.72888-1.47646 3.06698 1.41552133-1.0608267 2.9105751-1.7256288 4.4876574-1.95751891l.3476026-.04395109 1.3556-.1218v2.15597l3.4462-3.38915z"/></svg>
+      </span>
+      <span id="clipboard-button" title="Copy verilog code into clipboard encoded with base64">
+        📋
+      </span>
+      <span id="audio-button" title="Click to enable audio">
+        🔊
+      </span>
+      <span id="audio-mute-button" title="Click to disable audio">
+        🔇
+      </span>
+      <span class="flex-spacer"></span>
+      <a
+        href="https://github.com/TinyTapeout/vga-playground"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="GitHub Repository"
+      >
+        <svg width="32px" height="32px" fill="white" viewbox="0 0 24 24">
+          <path
+            d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"
+          />
+        </svg>
+      </a>
+    </header>
+    <main>
+      <div id="code-editor"></div>
+      <div id="vga-canvas-container">
+        <span id="fps-display">FPS: <span id="fps-count">00</span></span>
+        <div id="input-values">
+          ui_in:
+          <button>0</button>
+          <button>1</button>
+          <button>2</button>
+          <button>3</button>
+          <button>4</button>
+          <button>5</button>
+          <button>6</button>
+          <button>7</button>
+        </div>
+        <canvas width="736" height="520" id="vga-canvas"></canvas>
+      </div>
+    </main>
+    <script src="src/index.ts" type="module"></script>
+  </body>
+</html>
