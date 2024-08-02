@@ -145,7 +145,7 @@ function startAudio() {
 
       for (var i = 0; i < samples; i++) {
         jmod.tick2(cycles);
-        const sample = (jmod.state.audio_out - 3278.0) / 65536.0;
+        const sample = (jmod.state.audio_out - 32768.0) / 65536.0;
         data[i] = sample;
         
         // Uncomment to generate a perfect sine over time (no glitches)
