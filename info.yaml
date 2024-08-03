@@ -22,6 +22,11 @@ project:
     - "pdm.v"
     - "scale_rom.v"
     - "voice.v"
+    - "full_adder.v"
+    - "ripple_carry_adder.v"
+    - "generate_propagate.v"
+    - "carry_lookahead.v"
+    - "parallel_prefix_adder.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:

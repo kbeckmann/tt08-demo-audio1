@@ -27,14 +27,17 @@ module tt_um_top(
 // Audio signals
 wire audio_pdm;
 wire [15:0] audio_sample;
+reg  [15:0] audio_master;
+reg  [15:0] audio_master_r;
 
 `ifdef VERILATOR
   // assign clk_hz = 48000 * 21; // Close enough to 1MHz, but integer factor of 48kHz
   // assign audio_en = 1'b1;
   assign audio_en = 1'b0;
-  // assign audio_out = {4'b0, audio_sample} <<  4;
+  // assign audio_out = {8'b0, audio_sample} << 8; // 8 bit to 16 bit
+  assign audio_out = audio_sample;
   // assign audio_out = ((mix1 + mix2 + mix3 + mix4) << 5);
-  assign audio_out = (mix8 << 6);
+  // assign audio_out = (mix8 << 6);
   assign clk_hz = 1000000;
 `endif
 
@@ -69,14 +72,23 @@ pdm #(.N(12)) pdm_gen(
 );
 
   // Simple LPF
-  reg signed [15:0] mix1;
-  reg signed [15:0] mix2;
-  reg signed [15:0] mix3;
-  reg signed [15:0] mix4;
-  reg signed [15:0] mix5;
-  reg signed [15:0] mix6;
-  reg signed [15:0] mix7;
-  reg signed [15:0] mix8;
+  wire [15:0] delay_dout;
+  // Number of 8-bit registers in the delay line
+  localparam delay_N = 16;
+
+  // Define the delay line registers
+  reg [15:0] delay_line [delay_N-1:0];
+  integer i;
+
+  // Output is the value of the last register in the delay line
+  assign delay_dout = delay_line[delay_N-1];
+
+  // Shift the data through the delay line on each clock cycle
+  always @(posedge clk) begin
+      if (~rst_n) begin
+      end else begin
+      end
+  end
 
   reg clk_48k;
   reg clk_48k_posedge;
@@ -84,14 +96,13 @@ pdm #(.N(12)) pdm_gen(
   always @(posedge clk) begin
     if (~rst_n) begin
       counter <= 0;
-      mix1 <= 0;
-      mix2 <= 0;
-      mix3 <= 0;
-      mix4 <= 0;
-      mix5 <= 0;
-      mix6 <= 0;
-      mix7 <= 0;
-      mix8 <= 0;
+
+      audio_master <= 0;
+
+      // Reset all registers to 0
+      for (i = 0; i < delay_N; i = i + 1) begin
+          delay_line[i] <= 8'b0;
+      end
     end else begin
       counter <= counter + 1;
       clk_48k <= counter[5];
@@ -99,17 +110,17 @@ pdm #(.N(12)) pdm_gen(
       if (clk_48k_posedge) begin
 
         // Delay line
-        mix1 <= (voice1 >> 5);
-        mix2 <= mix1;
-        mix3 <= mix2;
-        mix4 <= mix3;
-        mix5 <= mix4;
-        mix6 <= mix5;
-        mix7 <= mix6;
+        // Shift data through the delay line
+        delay_line[0] <= voice1; // 12 to 8 bit
+        for (i = 1; i < delay_N; i = i + 1) begin
+            delay_line[i] <= delay_line[i-1];
+        end
 
         // Summing
-        // mix8 <= mix1 + mix2 + mix3 + mix4 + mix5 + mix6 + mix7;
-        mix8 <= voice1 >> 4;
+        // audio_master <= (voice1 >> 4) + audio_master;
+        audio_master <= voice1 - delay_dout + audio_master;
+        // audio_master <= voice1 << 4;
+        // audio_master <= voice1 >> 4; // 12 bit to 8 bit
       end
     end
   end
@@ -135,15 +146,16 @@ voice #() Voice1(
   .clk_1MHz(clk),
   .reset(~rst_n),
   .frequency(freq_out >> 3),
-  // .pulsewidth(1<<11),
+  .pulsewidth(1<<11),
   .control(control1),
-  // .Att_dec(8'h29),
-  // .Sus_Rel(8'h79),
-  // .PA_MSB_in(),
-  // .PA_MSB_out(),
+  .Att_dec(8'h29),
+  .Sus_Rel(8'h79),
+  .PA_MSB_in(),
+  .PA_MSB_out(msb),
   .voice(voice1)
 );
-assign audio_sample = mix8;
+//assign audio_sample = voice1;
+assign audio_sample = audio_master;
 
 // Audio end
 
