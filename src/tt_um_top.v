@@ -26,7 +26,7 @@ module tt_um_top(
 // ------------------------------
 // Audio signals
 wire audio_pdm;
-wire [15:0] audio_sample;
+wire [11:0] audio_sample;
 
 `ifdef VERILATOR
   // assign clk_hz = 48000 * 21; // Close enough to 1MHz, but integer factor of 48kHz
@@ -70,97 +70,94 @@ pdm #(.N(12)) pdm_gen(
   .pdm_in(audio_sample),
   .pdm_out(audio_pdm)
 );
-
-  // Simple LPF
-  reg [3:0] mix1;
-  reg [3:0] mix2;
-  reg [3:0] mix3;
-  reg [3:0] mix4;
-  reg [3:0] mix5;
-  reg [3:0] mix6;
-  reg [3:0] mix7;
-  reg [15:0] mix8;
-
-  reg clk_48k;
-  reg clk_48k_posedge;
   reg [24:0] ctr_audio;
   reg [7:0] ctr_clkdiv25;
+  reg clk_1MHz;
   always @(posedge clk) begin
     if (~rst_n) begin
       ctr_clkdiv25 <= 0;
       ctr_audio <= 0;
-      mix1 <= 0;
-      mix2 <= 0;
-      mix3 <= 0;
-      mix4 <= 0;
-      mix5 <= 0;
-      mix6 <= 0;
-      mix7 <= 0;
-      mix8 <= 0;
     end else begin
       if (ctr_clkdiv25 != 8'd25) begin
         ctr_clkdiv25 <= ctr_clkdiv25 + 8'b1;
+        clk_1MHz <= 1'b0;
       end else begin
         ctr_audio <= ctr_audio + 1;
         ctr_clkdiv25 <= 8'b0;
+        clk_1MHz <= 1'b1;
       end        
       // ctr_audio <= ctr_audio + 1;
-
-      clk_48k <= ctr_audio[5];
-      clk_48k_posedge <= (~clk_48k & ctr_audio[5]);
-      if (clk_48k_posedge) begin
-
-        // Delay line
-        mix1 <= voice1;
-        mix2 <= mix1;
-        mix3 <= mix2;
-        mix4 <= mix3;
-        mix5 <= mix4;
-        mix6 <= mix5;
-        mix7 <= mix6;
-
-        // Summing
-        mix8 <= (mix1 + mix2 + mix3 + mix4 + mix5 + mix6 + mix7) << 4;
-      end
     end
   end
 
-wire [ 3:0] note_in;
-wire [15:0] freq_out;
+  wire [ 3:0] note_in;
+  wire [15:0] freq_out;
 
-assign note_in = ctr_audio[19:17] & ctr_audio[23:20];
+  wire [ 3:0] note_in2;
+  wire [15:0] freq_out2;
 
-scale_rom scale_rom_instance(
-  .note_in(note_in),
-  .freq_out(freq_out)
-);
+  assign note_in = ctr_audio[17] + ctr_audio[19] + (ctr_audio[21]+ctr_audio[17]-ctr_audio[22]==2?1:0) + (ctr_audio[21]+ctr_audio[22]+ctr_audio[23]==3?4:0) + (ctr_audio[21]+ctr_audio[22]==2?2:0);
+  assign note_in2 = (ctr_audio[19]<<1) + (ctr_audio[23]+ctr_audio[22]<<1);
 
-// wire [11:0] voice1 = ctr_audio[12] ? 12'h7FF : 12'h000;
-// wire voice1 = ctr_audio[12] ? 1'h1 : 1'h0;
-wire [3:0] voice1 = ctr_audio[12] ? 4'hf : 4'h0;
+  // assign note_in = ctr_audio[20:17];
+  // assign note_in = 0;
 
-wire gate1 = ctr_audio[17:0] < (1 << 16);
-reg [ 7:0] control1 = {7'b0001000, gate1};
+  scale_rom scale_rom_instance2(
+    .note_in(note_in2),
+    .freq_out(freq_out2)
+  );
+  scale_rom scale_rom_instance(
+    .note_in(note_in),
+    .freq_out(freq_out)
+  );
 
-wire msb;
+  wire [11:0] voice1;
+  wire [11:0] voice2;
 
-// voice #() Voice1(
-//   .clk_1MHz(clk),
-//   .reset(~rst_n),
-//   .frequency(freq_out >> 3),
-//   .pulsewidth(1<<11),
-//   .control(control1),
-//   .Att_dec(8'h29),
-//   .Sus_Rel(8'h79),
-//   .PA_MSB_in(),
-//   .PA_MSB_out(msb),
-//   .voice(voice1)
-// );
+  // wire [15:0] frequency1 = freq_out;
+  // reg [ 7:0] control1 = (ctr_audio[16] & ctr_audio[17])<<6;
+  wire gate1 = ctr_audio[17:0] < (1 << 16);
+  wire gate2 = ctr_audio[21:0] < (1 << 20);
+  reg slap =  ctr_audio[16];
+  reg [ 7:0] control1; 
+  assign control1 = {1'b0, 6'b101000, gate1};
+  reg [ 7:0] control2;
+  assign control2 = {slap, 6'b100000, gate2};
+  // reg [11:0] pulsewidth1 = (1<<9);
 
+ wire msb;
 
+  voice #()
+      Voice1(
+          .clk_1MHz(clk_1MHz),
+          .reset(~rst_n),
+          // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: ctr_audio[17:10])),
+          .frequency((freq_out >> 3)),
+          .pulsewidth((1<<9) + ctr_audio[18:10] + (ctr_audio[23]<<10)),
+          .control(control1),
+          .Att_dec(8'h00),
+          .Sus_Rel(8'hff),
+          .PA_MSB_in(),
+          .PA_MSB_out(msb),
+          .voice(voice1)
+      );
+  voice #()
+      Voice2(
+          .clk_1MHz(clk_1MHz),
+          .reset(~rst_n),
+          // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: ctr_audio[17:10])),
+          .frequency(freq_out2 >> 1 + (slap<<3)),
+          .pulsewidth((1<<6) + ctr_audio[20:10]),
+          .control(control2),
+          .Att_dec(8'h00),
+          .Sus_Rel(8'hFF),
+          .PA_MSB_in(msb),
+          .PA_MSB_out(),
+          .voice(voice2)
+      );
 
-// assign audio_sample = voice1;
-assign audio_sample = mix8;
+    assign audio_sample = voice1 + (voice2);
+    // assign audio_out = voice2;
 
 // Audio end
 
