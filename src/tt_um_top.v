@@ -1,5 +1,6 @@
 /*
 * Copyright (c) 2024 Konrad Beckmann
+* Copyright (c) 2024 Linus Mårtensson
 * SPDX-License-Identifier: Apache-2.0
 */
 
@@ -26,17 +27,11 @@ module tt_um_top(
 // ------------------------------
 // Audio signals
 wire audio_pdm;
-wire [11:0] audio_sample;
+wire audio_sample;
 
 `ifdef VERILATOR
-  // assign clk_hz = 48000 * 21; // Close enough to 1MHz, but integer factor of 48kHz
-  // assign audio_en = 1'b1;
   assign audio_en = 1'b0;
-  assign audio_out = {4'b0, audio_sample} <<  4;
-  // assign audio_out = ((mix1 + mix2 + mix3 + mix4) << 5);
-  // assign audio_out = (mix8 << 6);
-  // assign clk_hz = 1000000;
-
+  assign audio_out = {audio_sample, 15'b000000000000000};
   assign clk_hz = 25000000; // This is reality
 `endif
 
@@ -64,102 +59,60 @@ wire _unused_ok = &{ena, ui_in, uio_in};
 
 // ------------------------------
 // Audio start
-pdm #(.N(12)) pdm_gen(
-  .clk(clk),
-  .rst_n(rst_n),
-  .pdm_in(audio_sample),
-  .pdm_out(audio_pdm)
-);
+
+assign audio_pdm = audio_sample;
+
+`define ENABLE_AUDIO
+`ifdef ENABLE_AUDIO
   reg [24:0] ctr_audio;
   reg [7:0] ctr_clkdiv25;
-  reg clk_1MHz;
+  reg pulse_1MHz;
+
   always @(posedge clk) begin
     if (~rst_n) begin
       ctr_clkdiv25 <= 0;
       ctr_audio <= 0;
+      pulse_1MHz <= 0;
     end else begin
-      if (ctr_clkdiv25 != 8'd25) begin
-        ctr_clkdiv25 <= ctr_clkdiv25 + 8'b1;
-        clk_1MHz <= 1'b0;
-      end else begin
+      ctr_clkdiv25 <= ctr_clkdiv25 + 1;
+      if (ctr_clkdiv25 == 25) begin
+        ctr_clkdiv25 <= 0;
         ctr_audio <= ctr_audio + 1;
-        ctr_clkdiv25 <= 8'b0;
-        clk_1MHz <= 1'b1;
-      end        
-      // ctr_audio <= ctr_audio + 1;
+        pulse_1MHz <= 1'b1;
+      end else begin
+        pulse_1MHz <= 1'b0;
+      end
     end
   end
 
   wire [ 3:0] note_in;
   wire [15:0] freq_out;
 
-  wire [ 3:0] note_in2;
-  wire [15:0] freq_out2;
-
   assign note_in = ctr_audio[17] + ctr_audio[19] + (ctr_audio[21]+ctr_audio[17]-ctr_audio[22]==2?1:0) + (ctr_audio[21]+ctr_audio[22]+ctr_audio[23]==3?4:0) + (ctr_audio[21]+ctr_audio[22]==2?2:0);
-  assign note_in2 = (ctr_audio[19]<<1) + (ctr_audio[23]+ctr_audio[22]<<1);
 
-  // assign note_in = ctr_audio[20:17];
-  // assign note_in = 0;
-
-  scale_rom scale_rom_instance2(
-    .note_in(note_in2),
-    .freq_out(freq_out2)
-  );
   scale_rom scale_rom_instance(
     .note_in(note_in),
     .freq_out(freq_out)
   );
 
-  wire [11:0] voice1;
-  wire [11:0] voice2;
-
-  // wire [15:0] frequency1 = freq_out;
-  // reg [ 7:0] control1 = (ctr_audio[16] & ctr_audio[17])<<6;
-  wire gate1 = ctr_audio[17:0] < (1 << 16);
-  wire gate2 = ctr_audio[21:0] < (1 << 20);
-  reg slap =  ctr_audio[16];
-  reg [ 7:0] control1; 
-  assign control1 = {1'b0, 6'b101000, gate1};
-  reg [ 7:0] control2;
-  assign control2 = {slap, 6'b100000, gate2};
-  // reg [11:0] pulsewidth1 = (1<<9);
-
- wire msb;
+  wire voice1;
 
   voice #()
       Voice1(
-          .clk_1MHz(clk_1MHz),
-          .reset(~rst_n),
-          // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: ctr_audio[17:10])),
+          .clk(clk),
+          .rst_n(rst_n),
+          .en(pulse_1MHz),
           .frequency((freq_out >> 3)),
-          .pulsewidth((1<<9) + ctr_audio[18:10] + (ctr_audio[23]<<10)),
-          .control(control1),
-          .Att_dec(8'h00),
-          .Sus_Rel(8'hff),
-          .PA_MSB_in(),
-          .PA_MSB_out(msb),
+          .pulsewidth((1<<7) + ctr_audio[18:10] + (ctr_audio[23]<<10)),
           .voice(voice1)
-      );
-  voice #()
-      Voice2(
-          .clk_1MHz(clk_1MHz),
-          .reset(~rst_n),
-          // .frequency((freq_out >> 1) + (freq_out == 0 ? 0: ctr_audio[17:10])),
-          .frequency(freq_out2 >> 1 + (slap<<3)),
-          .pulsewidth((1<<6) + ctr_audio[20:10]),
-          .control(control2),
-          .Att_dec(8'h00),
-          .Sus_Rel(8'hFF),
-          .PA_MSB_in(msb),
-          .PA_MSB_out(),
-          .voice(voice2)
-      );
+  );
 
-    assign audio_sample = voice1 + (voice2);
-    // assign audio_out = voice2;
+  assign audio_sample = voice1;
 
 // Audio end
+`else
+  assign audio_sample = 0;
+`endif
 
 // ------------------------------
 // VGA start
@@ -173,50 +126,35 @@ hvsync_generator hvsync_gen(
     .vpos(pix_y)
 );
 
-reg [11:0] counter;
-reg [23:0] VAL;
-reg top, bottom, left, right;
-reg [10:0] rxy, pxy;
-reg  [5:0] LFSR = 1;
-reg [7:0] T, xl, yl, bottom_l, back_l, top_a, top_b, top_l;
-reg fg;
-reg lh, bh;
-reg [7:0] fgg, fgb;
+reg  [11:0] counter;
+wire [23:0] VAL;
+reg   [7:0] r, g, b;
+reg   [5:0] LFSR = 1;
+reg  [19:0] yq, yqo, xq, xqo;
 
-function reg[18:0] max ( input reg [18:0] a, b);
-  max = a > b ? a : b;
-endfunction
-function reg[19:0] min ( input reg[19:0] a, b);
-  min = a < b ? a : b;
-endfunction
-function reg[7:0] abs ( input reg[7:0] a);
-  abs = a[7]?-a:a;
-endfunction
 function reg[7:0] tria (input reg[7:0] a);
   tria = a > 127 ? 255 - a : a;
 endfunction;
 
-reg [19:0] yq, yqo, xq, xqo;
-reg [9:0] limy;
-reg [7:0] r,g,b;
+assign VAL[7:0]   = r;
+assign VAL[15:8]  = g;
+assign VAL[23:16] = b;
 
 always @(posedge clk) begin
   if(~rst_n) begin
-    top <= 0; bottom <= 0; left <= 0; right <= 0;
-    rxy <= 0; pxy <= 0;
     LFSR <= 1;
-    //TODO rst all the things^
+    yq <= 0;
+    yqo <= 0;
+    xq <= 0;
+    xqo <= 0;
+    r <= 0;
+    g <= 0;
+    b <= 0;
   end else begin
 
-    
-    VAL[7:0]   <= r;
-    VAL[15:8]  <= g;
-    VAL[23:16] <= b;
-    
-    r <= tria((pix_x>>2)-80)<32?(tria((((xq>>4))-(yq>>5)))+((pix_x>>2)+(pix_y>>3))-20):0;
+    r <= tria((pix_x>>2)-80)<32?(tria((((xq>>4))-(yq>>5)))+((pix_x>>2)+(pix_y>>3))-20) : 0;
     g <= r + (pix_y>>4);
-    b <= g + (pix_y>>4);
-    
+    b <= g + (pix_y>>4);    
     
     xq <= xqo + (tria(pix_x+(counter<<3)>>4)>>4)+22;
     xqo <= xq;
@@ -237,7 +175,6 @@ always @(posedge clk) begin
   end
 end
 
-
 assign R = video_active ? (
         (VAL[7:6]) + (LFSR[5:0] < VAL[5:0])
     ) : 2'b00;
@@ -250,13 +187,12 @@ assign B = video_active ? (
 
 always @(posedge vsync) begin
     if (~rst_n) begin
-    counter <= 0;
+        counter <= 0;
     end else begin
-    counter <= counter + 1;
+        counter <= counter + 1;
     end
 end
 
 // VGA end
 
 endmodule
-

@@ -1,9 +1,9 @@
 # Tiny Tapeout project information
 project:
-  title:        "KB Demo audio 1"      # Project title
+  title:        "Flame demo"      # Project title
   author:       "Konrad Beckmann"      # Your name
   discord:      "kbeckmann"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  "WIP demo"      # One line description of what your project does
+  description:  "Flame demo"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     25000000       # Clock frequency in Hz (or 0 if not applicable)
 
@@ -17,10 +17,9 @@ project:
   # Source files must be in ./src and you must list each source file separately, one per line.
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
-    - "tt_um_top.v"
     - "hvsync_gen.v"
-    - "pdm.v"
     - "scale_rom.v"
+    - "tt_um_top.v"
     - "voice.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
