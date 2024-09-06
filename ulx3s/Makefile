@@ -6,7 +6,6 @@ VERILOG += ./top.v \
 # TT design
 VERILOG += \
 	../src/hvsync_gen.v \
-	../src/pdm.v \
 	../src/scale_rom.v \
 	../src/tt_um_top.v \
 	../src/voice.v \

@@ -9,18 +9,16 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-This is a placeholder and will be fixed.
-
-Fix this yes.
+It shows a flame and plays audio.
 
 ## How to test
 
-This is a placeholder and will be fixed.
+Run `make` in /test.
 
-Fix this yes.
+Run the web viewer, found under /web/. See separate readme.
+
+Run on a ULX3S FPGA. Run `make` and `make prog` under /ulx3s/
 
 ## External hardware
 
-This is a placeholder and will be fixed.
-
-Fix this yes.
+Enable the design and provide a 25MHz clock. Connect VGA and Audio according to the Demoscene challenge documentation https://tinytapeout.com/competitions/demoscene/

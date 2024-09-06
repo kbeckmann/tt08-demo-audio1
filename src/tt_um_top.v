@@ -88,7 +88,29 @@ assign audio_pdm = audio_sample;
   wire [ 3:0] note_in;
   wire [15:0] freq_out;
 
-  assign note_in = ctr_audio[17] + ctr_audio[19] + (ctr_audio[21]+ctr_audio[17]-ctr_audio[22]==2?1:0) + (ctr_audio[21]+ctr_audio[22]+ctr_audio[23]==3?4:0) + (ctr_audio[21]+ctr_audio[22]==2?2:0);
+  assign note_in = 
+      {3'b000, ctr_audio[17]}
+    + {3'b000, ctr_audio[19]}
+    + (
+        (
+          ctr_audio[21] +
+          ctr_audio[17] - 
+          ctr_audio[22]
+        ) == 2 ? 1 : 0
+    )
+    + (
+        (
+          ctr_audio[21] + 
+          ctr_audio[22] + 
+          ctr_audio[23]
+        ) == 3 ? 4 : 0
+    )
+    + (
+        (
+          ctr_audio[21] + 
+          ctr_audio[22]
+        ) == 2 ? 2 : 0
+    );
 
   scale_rom scale_rom_instance(
     .note_in(note_in),
@@ -96,6 +118,7 @@ assign audio_pdm = audio_sample;
   );
 
   wire voice1;
+  wire [11:0] pulsewidth = (1<<9) + {3'b000, ctr_audio[18:10]} + {1'b0, ctr_audio[23], 10'b0000000000};
 
   voice #()
       Voice1(
@@ -103,7 +126,7 @@ assign audio_pdm = audio_sample;
           .rst_n(rst_n),
           .en(pulse_1MHz),
           .frequency((freq_out >> 3)),
-          .pulsewidth((1<<7) + ctr_audio[18:10] + (ctr_audio[23]<<10)),
+          .pulsewidth(pulsewidth),
           .voice(voice1)
   );
 
@@ -130,7 +153,7 @@ reg  [11:0] counter;
 wire [23:0] VAL;
 reg   [7:0] r, g, b;
 reg   [5:0] LFSR = 1;
-reg  [19:0] yq, yqo, xq, xqo;
+reg  [12:0] yq, yqo, xq, xqo;
 
 function reg[7:0] tria (input reg[7:0] a);
   tria = a > 127 ? 255 - a : a;
@@ -139,6 +162,28 @@ endfunction;
 assign VAL[7:0]   = r;
 assign VAL[15:8]  = g;
 assign VAL[23:16] = b;
+
+wire [11:0] tmp1 = (
+                {2'b0, pix_x} 
+                + (counter<<3)
+              ) >> 4;
+
+wire [12:0] tmp2 = ((xq>>4) - (yq>>5));
+wire [11:0] tmp3 = (
+        {4'b0, tria(tmp2[7:0])}
+        + (
+          {2'b0,
+            (pix_x>>2) + (pix_y>>3)
+          }
+        )
+        - 20
+      );
+wire [11:0] tmp4 = (
+                {2'b0, pix_y}
+                + (counter << 2)
+              ) >> 1;
+
+wire _unused_truncate = &{tmp1, tmp2, tmp3, tmp4};
 
 always @(posedge clk) begin
   if(~rst_n) begin
@@ -152,14 +197,26 @@ always @(posedge clk) begin
     b <= 0;
   end else begin
 
-    r <= tria((pix_x>>2)-80)<32?(tria((((xq>>4))-(yq>>5)))+((pix_x>>2)+(pix_y>>3))-20) : 0;
-    g <= r + (pix_y>>4);
-    b <= g + (pix_y>>4);    
+    r <= tria(pix_x[9:2] - 80) < 32 ? tmp3[7:0] : 0;
+    g <= r + {3'b0, pix_y[8:4]};
+    b <= g + {3'b0, pix_y[8:4]};    
     
-    xq <= xqo + (tria(pix_x+(counter<<3)>>4)>>4)+22;
+    xq <= xqo 
+      + (
+        {5'b0,
+          tria(
+            tmp1[7:0]
+          ) >> 4
+        }
+      )
+      + 22;
     xqo <= xq;
     if (hsync) begin
-      yq <= yqo + (tria(pix_y+(counter<<2)>>1)>>2)-22;
+      yq <= yqo
+        + {5'b0,
+          tria(tmp4[7:0]) >> 2
+        }
+        - 22;
       xq <= 0;
     end else begin
       yqo <= yq;
@@ -169,8 +226,8 @@ always @(posedge clk) begin
       yq <= 0;
       yqo <= 0;
     end else begin
-      LFSR[5:1]   <= LFSR[4:0];
-      LFSR[0]   <= LFSR[2]^LFSR[1];
+      LFSR[5:1] <= LFSR[4:0];
+      LFSR[0]   <= LFSR[2] ^ LFSR[1];
     end
   end
 end
